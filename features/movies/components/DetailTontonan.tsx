@@ -7,6 +7,7 @@ import type { MovieItem } from "@/types/Movie";
 import { FormatGenre, FormatRating, FormatTipe } from "@/utils/Format";
 import { BikinUrlGambarTmdb } from "@/utils/TmdbImage";
 import { WatchlistButton } from "./WatchlistButton";
+import { FadeInUp, ScaleIn } from "@/components/animations/MotionWrapper";
 
 interface DetailTontonanProps {
   Item: MovieItem;
@@ -44,7 +45,10 @@ export function DetailTontonan({ Item }: DetailTontonanProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/40" />
 
         <div className="relative grid gap-8 p-5 md:p-8 lg:grid-cols-[0.85fr_1.15fr] lg:p-10">
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-4">
+          <ScaleIn
+            delay={0.1}
+            className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-4"
+          >
             <div className="relative aspect-[4/5] overflow-hidden rounded-[1.35rem] bg-slate-900">
               {PosterUrl ? (
                 <Image
@@ -52,7 +56,7 @@ export function DetailTontonan({ Item }: DetailTontonanProps) {
                   alt={Item.judul}
                   fill
                   sizes="(max-width: 1024px) 100vw, 40vw"
-                  className="object-cover"
+                  className="object-cover transition duration-500 hover:scale-105"
                 />
               ) : (
                 <div className="size-full bg-gradient-to-br from-[#8FDC2C] to-slate-950" />
@@ -63,7 +67,7 @@ export function DetailTontonan({ Item }: DetailTontonanProps) {
               <Badge variant="primary">{FormatTipe(Item.tipe)}</Badge>
               <Badge variant="dark">{Item.usia}</Badge>
             </div>
-          </div>
+          </ScaleIn>
 
           <div className="flex flex-col justify-center">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8FDC2C]">
