@@ -7,7 +7,7 @@ import type { MovieItem } from "@/types/Movie";
 import { FormatGenre, FormatRating, FormatTipe } from "@/utils/Format";
 import { BikinUrlGambarTmdb } from "@/utils/TmdbImage";
 import { WatchlistButton } from "./WatchlistButton";
-import { FadeInUp, ScaleIn } from "@/components/animations/MotionWrapper";
+import { ScaleIn, HoverScale } from "@/components/animations/MotionWrapper";
 
 interface DetailTontonanProps {
   Item: MovieItem;
@@ -137,12 +137,14 @@ export function DetailTontonan({ Item }: DetailTontonanProps) {
 
             <div className="mt-8 flex flex-wrap gap-3">
               {Item.trailerUrl ? (
-                <a href={Item.trailerUrl} target="_blank" rel="noreferrer">
-                  <Button className="gap-2">
-                    <Play size={17} fill="currentColor" />
-                    {Item.trailerLabel}
-                  </Button>
-                </a>
+                <HoverScale>
+                  <a href={Item.trailerUrl} target="_blank" rel="noreferrer">
+                    <Button className="gap-2">
+                      <Play size={17} fill="currentColor" />
+                      {Item.trailerLabel}
+                    </Button>
+                  </a>
+                </HoverScale>
               ) : (
                 <Button disabled>{Item.trailerLabel}</Button>
               )}
