@@ -94,67 +94,64 @@ export default function WatchlistPage() {
         ) : (
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {watchlist.map((item) => {
-              const PosterUrl = BikinUrlGambarTmdb(item.posterPath, "w500");
+                const PosterUrl = BikinUrlGambarTmdb(item.posterPath, "w500");
 
-              return (
-                <article
-                  key={item.id}
-                  className="group overflow-hidden rounded-3xl border border-white/10 bg-white/6"
-                >
-                  <Link href={`/detail/${item.slug}`}>
-                    <div className="relative aspect-4/5 overflow-hidden bg-slate-900">
-                      {PosterUrl ? (
-                        <Image
-                          src={PosterUrl}
-                          alt={item.judul}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 25vw"
-                          className="object-cover transition duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="size-full bg-linear-to-br from-[#8FDC2C] to-slate-950" />
-                      )}
+                return (
+                    <HoverScale key={item.id}>
+                    <article className="group overflow-hidden rounded-3xl border border-white/10 bg-white/6">
+                        <Link href={`/detail/${item.slug}`}>
+                        <div className="relative aspect-4/5 overflow-hidden bg-slate-900">
+                            {PosterUrl ? (
+                            <Image
+                                src={PosterUrl}
+                                alt={item.judul}
+                                fill
+                                sizes="(max-width: 768px) 100vw, 25vw"
+                                className="object-cover transition duration-300 group-hover:scale-105"
+                            />
+                            ) : (
+                            <div className="size-full bg-linear-to-br from-[#8FDC2C] to-slate-950" />
+                            )}
 
-                      <div className="absolute left-3 top-3 flex gap-2">
-                        <Badge variant="primary">
-                          {FormatTipe(item.tipe)}
-                        </Badge>
-                        <Badge variant="dark">{item.usia}</Badge>
-                      </div>
-                    </div>
-                  </Link>
+                            <div className="absolute left-3 top-3 flex gap-2">
+                            <Badge variant="primary">{FormatTipe(item.tipe)}</Badge>
+                            <Badge variant="dark">{item.usia}</Badge>
+                            </div>
+                        </div>
+                        </Link>
 
-                  <div className="space-y-4 p-4">
-                    <div>
-                      <Link href={`/detail/${item.slug}`}>
-                        <h2 className="line-clamp-1 text-lg font-bold transition hover:text-[#8FDC2C]">
-                          {item.judul}
-                        </h2>
-                      </Link>
+                        <div className="space-y-4 p-4">
+                        <div>
+                            <Link href={`/detail/${item.slug}`}>
+                            <h2 className="line-clamp-1 text-lg font-bold transition hover:text-[#8FDC2C]">
+                                {item.judul}
+                            </h2>
+                            </Link>
 
-                      <p className="mt-1 text-sm text-slate-400">
-                        {item.tahun} • {item.status}
-                      </p>
-                    </div>
+                            <p className="mt-1 text-sm text-slate-400">
+                            {item.tahun} • {item.status}
+                            </p>
+                        </div>
 
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#8FDC2C]">
-                        <Star size={16} fill="currentColor" />
-                        {FormatRating(item.rating)}
-                      </span>
+                        <div className="flex items-center justify-between gap-3">
+                            <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#8FDC2C]">
+                            <Star size={16} fill="currentColor" />
+                            {FormatRating(item.rating)}
+                            </span>
 
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFromWatchlist(item.id)}
-                        className="inline-flex items-center gap-2 rounded-full border border-red-500/40 px-3 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500 hover:text-white"
-                      >
-                        <Trash2 size={16} />
-                        Hapus
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
+                            <button
+                            type="button"
+                            onClick={() => handleRemoveFromWatchlist(item.id)}
+                            className="inline-flex items-center gap-2 rounded-full border border-red-500/40 px-3 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500 hover:text-white"
+                            >
+                            <Trash2 size={16} />
+                            Hapus
+                            </button>
+                        </div>
+                        </div>
+                    </article>
+                    </HoverScale>
+                );
             })}
           </div>
         )}
