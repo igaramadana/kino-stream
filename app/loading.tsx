@@ -1,21 +1,16 @@
-import { Skeleton } from "@/components/ui/Skeleton";
+import { HeroSectionSkeleton } from "@/features/movies/components/HeroSectionSkeleton";
+import { MovieListSkeleton } from "@/features/movies/components/MovieListSkeleton";
 
-export default function LoadingPage() {
+export default function Loading() {
   return (
-    <main className="mx-auto max-w-7xl px-5 py-8">
-      <Skeleton className="h-[560px] rounded-[2rem]" />
+    <main className="mx-auto min-h-screen max-w-7xl px-5 py-8 text-white md:py-12">
+      <HeroSectionSkeleton />
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, Index) => (
-          <Skeleton key={Index} className="h-32 rounded-3xl" />
-        ))}
-      </div>
+      <section className="mt-12">
+        <div className="mb-6 h-8 w-48 animate-pulse rounded bg-white/10" />
 
-      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, Index) => (
-          <Skeleton key={Index} className="aspect-[4/5] rounded-[1.75rem]" />
-        ))}
-      </div>
+        <MovieListSkeleton />
+      </section>
     </main>
   );
 }
