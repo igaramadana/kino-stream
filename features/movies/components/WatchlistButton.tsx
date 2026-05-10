@@ -1,75 +1,74 @@
 "use client";
 
-import { useState } from "react";
-
-type WatchlistItem = {
-  id: number;
-  title?: string;
-  name?: string;
-  poster_path?: string | null;
-  backdrop_path?: string | null;
-  overview?: string;
-  vote_average?: number;
-  media_type?: "movie" | "tv";
-  release_date?: string;
-  first_air_date?: string;
-};
+import { motion } from "framer-motion";
+import { useSyncExternalStore } from "react";
+import type { MovieItem } from "@/types/Movie";
 
 type WatchlistButtonProps = {
-  item: WatchlistItem;
+  item: MovieItem;
 };
 
 const WATCHLIST_KEY = "gatrons-watchlist";
 
-function getInitialWatchlist(): WatchlistItem[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
+function subscribe(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("watchlist-updated", callback);
 
-  const storedWatchlist = localStorage.getItem(WATCHLIST_KEY);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("watchlist-updated", callback);
+  };
+}
 
-  if (!storedWatchlist) {
-    return [];
-  }
+function getWatchlistSnapshot() {
+  return localStorage.getItem(WATCHLIST_KEY) ?? "[]";
+}
 
+function getServerSnapshot() {
+  return "[]";
+}
+
+function parseWatchlist(value: string): MovieItem[] {
   try {
-    return JSON.parse(storedWatchlist);
+    return JSON.parse(value);
   } catch {
     return [];
   }
 }
 
 export function WatchlistButton({ item }: WatchlistButtonProps) {
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(
-    getInitialWatchlist
+  const watchlistSnapshot = useSyncExternalStore(
+    subscribe,
+    getWatchlistSnapshot,
+    getServerSnapshot
   );
 
+  const watchlist = parseWatchlist(watchlistSnapshot);
   const isSaved = watchlist.some((movie) => movie.id === item.id);
 
   function handleToggleWatchlist() {
-    let updatedWatchlist: WatchlistItem[];
+    const updatedWatchlist = isSaved
+      ? watchlist.filter((movie) => movie.id !== item.id)
+      : [...watchlist, item];
 
-    if (isSaved) {
-      updatedWatchlist = watchlist.filter((movie) => movie.id !== item.id);
-    } else {
-      updatedWatchlist = [...watchlist, item];
-    }
-
-    setWatchlist(updatedWatchlist);
     localStorage.setItem(WATCHLIST_KEY, JSON.stringify(updatedWatchlist));
+    window.dispatchEvent(new Event("watchlist-updated"));
   }
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={handleToggleWatchlist}
-      className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ duration: 0.18 }}
+      className={`rounded-full border px-5 py-2 text-sm font-semibold transition ${
         isSaved
-          ? "bg-red-500 text-white hover:bg-red-600"
-          : "bg-white text-black hover:bg-zinc-950"
+          ? "border-red-500 bg-red-500 text-white hover:bg-red-600"
+          : "border-white/20 bg-transparent text-white hover:bg-white hover:text-black"
       }`}
     >
       {isSaved ? "Hapus dari Watchlist" : "Tambah ke Watchlist"}
-    </button>
+    </motion.button>
   );
 }

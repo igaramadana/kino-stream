@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import type { MovieItem } from "@/types/Movie";
 import { FormatRating, FormatTipe } from "@/utils/Format";
 import { BikinUrlGambarTmdb } from "@/utils/TmdbImage";
+import { FadeInUp, HoverScale } from "@/components/animations/MotionWrapper";
 
 const WATCHLIST_KEY = "gatrons-watchlist";
 
@@ -64,19 +65,19 @@ export default function WatchlistPage() {
       </Link>
 
       <section className="mt-8">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8FDC2C]">
-            Watchlist
-          </p>
+        <FadeInUp className="flex flex-col gap-2">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#8FDC2C]">
+                Watchlist
+            </p>
 
-          <h1 className="text-4xl font-black tracking-tight md:text-6xl">
-            Daftar Tontonan Saya
-          </h1>
+            <h1 className="text-4xl font-black tracking-tight md:text-6xl">
+                Daftar Tontonan Saya
+            </h1>
 
-          <p className="max-w-2xl text-slate-400">
-            Film dan series yang kamu simpan akan muncul di halaman ini.
-          </p>
-        </div>
+            <p className="max-w-2xl text-slate-400">
+                Film dan series yang kamu simpan akan muncul di halaman ini.
+            </p>
+        </FadeInUp>
 
         {watchlist.length === 0 ? (
           <div className="mt-10 rounded-4xl border border-white/10 bg-white/6 p-8 text-center">
