@@ -27,8 +27,8 @@ export function Navbar() {
           <a href="#list" className="hover:text-[#8FDC2C]">
             List
           </a>
-          <a href="#about" className="hover:text-[#8FDC2C]">
-            About
+          <a href="/watchlist" className="hover:text-[#8FDC2C]">
+            Watchlist
           </a>
         </div>
 
