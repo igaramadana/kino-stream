@@ -61,3 +61,15 @@ export interface TmdbListResponse<T> {
     total_pages: number;
     total_results: number;
 }
+
+export interface TmdbCreditCast {
+  id: number;
+  name: string;
+  character: string;
+  order: number;
+}
+
+export interface TmdbCreditsResponse {
+  id: number;
+  cast: TmdbCreditCast[];
+}

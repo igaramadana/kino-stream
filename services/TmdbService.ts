@@ -95,29 +95,31 @@ export async function AmbilMoviePopuler(): Promise<MovieItem[]> {
     AmbilGenreMovie()
   ]);
 
-  return DataMovie.results.slice(0, 10).map((Item, Index) => ({
-    id: Item.id,
-    slug: BikinSlug(Item.title, Item.id),
-    tmdbId: Item.id,
-    judul: Item.title || Item.original_title || "Tanpa Judul",
-    judulAsli: Item.original_title || Item.title || "Tanpa Judul",
-    tipe: "movie",
-    tahun: AmbilTahun(Item.release_date),
-    durasi: BikinDurasi("movie"),
-    rating: Item.vote_average || 0,
-    usia: BikinUsiaDefault("movie"),
-    genre: CocokinGenre(Item.genre_ids, DaftarGenre),
-    sutradara: "Data dari TMDB",
-    pemeran: ["Detail cast bisa dikembangkan dari credits API"],
-    bahasa: Item.original_language?.toUpperCase() || "N/A",
-    status: "Released",
-    ringkasan: Item.overview || "Sinopsis belum tersedia.",
-    sinopsis: Item.overview || "Sinopsis belum tersedia.",
-    posterPath: Item.poster_path,
-    backdropPath: Item.backdrop_path,
-    trailerLabel: "Lihat Detail",
-    trending: Index < 5
-  }));
+  return Promise.all(
+    DataMovie.results.slice(0, 10).map(async (Item, Index) => ({
+      id: Item.id,
+      slug: BikinSlug(Item.title, Item.id),
+      tmdbId: Item.id,
+      judul: Item.title || Item.original_title || "Tanpa Judul",
+      judulAsli: Item.original_title || Item.title || "Tanpa Judul",
+      tipe: "movie" as const,
+      tahun: AmbilTahun(Item.release_date),
+      durasi: BikinDurasi("movie"),
+      rating: Item.vote_average || 0,
+      usia: BikinUsiaDefault("movie"),
+      genre: CocokinGenre(Item.genre_ids, DaftarGenre),
+      sutradara: "Data dari TMDB",
+      pemeran: await AmbilPemeranTmdb("movie", Item.id),
+      bahasa: Item.original_language?.toUpperCase() || "N/A",
+      status: "Released",
+      ringkasan: Item.overview || "Sinopsis belum tersedia.",
+      sinopsis: Item.overview || "Sinopsis belum tersedia.",
+      posterPath: Item.poster_path,
+      backdropPath: Item.backdrop_path,
+      trailerLabel: "Lihat Detail",
+      trending: Index < 5
+    }))
+  );
 }
 
 export async function AmbilSeriesPopuler(): Promise<MovieItem[]> {
@@ -128,29 +130,31 @@ export async function AmbilSeriesPopuler(): Promise<MovieItem[]> {
     AmbilGenreSeries()
   ]);
 
-  return DataSeries.results.slice(0, 10).map((Item, Index) => ({
-    id: Item.id,
-    slug: BikinSlug(Item.name, Item.id),
-    tmdbId: Item.id,
-    judul: Item.name || Item.original_name || "Tanpa Judul",
-    judulAsli: Item.original_name || Item.name || "Tanpa Judul",
-    tipe: "series",
-    tahun: AmbilTahun(Item.first_air_date),
-    durasi: BikinDurasi("series"),
-    rating: Item.vote_average || 0,
-    usia: BikinUsiaDefault("series"),
-    genre: CocokinGenre(Item.genre_ids, DaftarGenre),
-    sutradara: "Data dari TMDB",
-    pemeran: ["Detail cast bisa dikembangkan dari credits API"],
-    bahasa: Item.original_language?.toUpperCase() || "N/A",
-    status: "On Going / Released",
-    ringkasan: Item.overview || "Sinopsis belum tersedia.",
-    sinopsis: Item.overview || "Sinopsis belum tersedia.",
-    posterPath: Item.poster_path,
-    backdropPath: Item.backdrop_path,
-    trailerLabel: "Lihat Detail",
-    trending: Index < 5
-  }));
+  return Promise.all(
+    DataSeries.results.slice(0, 10).map(async (Item, Index) => ({
+      id: Item.id,
+      slug: BikinSlug(Item.name, Item.id),
+      tmdbId: Item.id,
+      judul: Item.name || Item.original_name || "Tanpa Judul",
+      judulAsli: Item.original_name || Item.name || "Tanpa Judul",
+      tipe: "series" as const,
+      tahun: AmbilTahun(Item.first_air_date),
+      durasi: BikinDurasi("series"),
+      rating: Item.vote_average || 0,
+      usia: BikinUsiaDefault("series"),
+      genre: CocokinGenre(Item.genre_ids, DaftarGenre),
+      sutradara: "Data dari TMDB",
+      pemeran: await AmbilPemeranTmdb("series", Item.id),
+      bahasa: Item.original_language?.toUpperCase() || "N/A",
+      status: "On Going / Released",
+      ringkasan: Item.overview || "Sinopsis belum tersedia.",
+      sinopsis: Item.overview || "Sinopsis belum tersedia.",
+      posterPath: Item.poster_path,
+      backdropPath: Item.backdrop_path,
+      trailerLabel: "Lihat Detail",
+      trending: Index < 5
+    }))
+  );
 }
 
 export async function AmbilSemuaTontonan(): Promise<MovieItem[]> {
@@ -182,4 +186,32 @@ export async function AmbilSlugTontonan() {
   return DaftarTontonan.map((Item) => ({
     slug: Item.slug
   }));
+}
+
+async function AmbilPemeranTmdb(
+  tipe: "movie" | "series",
+  tmdbId: number
+): Promise<string[]> {
+  const Endpoint =
+    tipe === "movie"
+      ? `/movie/${tmdbId}/credits?language=id-ID`
+      : `/tv/${tmdbId}/credits?language=id-ID`;
+
+  try {
+    const Data = await PanggilTmdb<{
+      cast: {
+        id: number;
+        name: string;
+        character: string;
+        order: number;
+      }[];
+    }>(Endpoint);
+
+    return Data.cast
+      .sort((AktorA, AktorB) => AktorA.order - AktorB.order)
+      .slice(0, 5)
+      .map((Aktor) => Aktor.name);
+  } catch {
+    return ["Pemeran belum tersedia"];
+  }
 }
