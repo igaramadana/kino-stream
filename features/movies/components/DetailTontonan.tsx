@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Clock, Star, Users } from "lucide-react";
+import { ArrowLeft, Clock, Play, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { MovieItem } from "@/types/Movie";
@@ -106,8 +106,12 @@ export function DetailTontonan({ Item }: DetailTontonanProps) {
 
             <div className="mt-8 grid gap-4 rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-5 md:grid-cols-2">
               <div>
-                <p className="text-sm text-slate-500">Sumber</p>
-                <p className="mt-1 font-bold text-white">{Item.sutradara}</p>
+                <p className="text-sm text-slate-500">Studio</p>
+                <p className="mt-1 font-bold text-white">
+                  {Item.studio.length > 0
+                    ? Item.studio.join(", ")
+                    : "Studio belum tersedia"}
+                </p>
               </div>
 
               <div>
@@ -121,16 +125,30 @@ export function DetailTontonan({ Item }: DetailTontonanProps) {
                   Pemeran
                 </p>
 
-                <p className="mt-1 font-bold text-white">{Item.pemeran.join(", ")}</p>
+                <p className="mt-1 font-bold text-white">
+                  {Item.pemeran.join(", ")}
+                </p>
               </div>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button>{Item.trailerLabel}</Button>
+              {Item.trailerUrl ? (
+                <a href={Item.trailerUrl} target="_blank" rel="noreferrer">
+                  <Button className="gap-2">
+                    <Play size={17} fill="currentColor" />
+                    {Item.trailerLabel}
+                  </Button>
+                </a>
+              ) : (
+                <Button disabled>{Item.trailerLabel}</Button>
+              )}
+
               <WatchlistButton item={Item} />
             </div>
 
-            <p className="mt-5 text-sm text-slate-500">{FormatGenre(Item.genre)}</p>
+            <p className="mt-5 text-sm text-slate-500">
+              {FormatGenre(Item.genre)}
+            </p>
           </div>
         </div>
       </section>

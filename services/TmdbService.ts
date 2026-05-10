@@ -1,9 +1,14 @@
 import type {
   MovieItem,
+  TmdbCreditsResponse,
   TmdbGenre,
   TmdbListResponse,
+  TmdbMovieDetail,
   TmdbMovieResult,
-  TmdbTvResult
+  TmdbTvDetail,
+  TmdbTvResult,
+  TmdbVideosResponse,
+  TipeTontonan,
 } from "@/types/Movie";
 
 const TmdbBaseUrl = "https://api.themoviedb.org/3";
@@ -22,11 +27,11 @@ async function PanggilTmdb<T>(endpoint: string): Promise<T> {
   const Response = await fetch(`${TmdbBaseUrl}${endpoint}`, {
     headers: {
       Authorization: `Bearer ${AmbilTokenTmdb()}`,
-      accept: "application/json"
+      accept: "application/json",
     },
     next: {
-      revalidate: 3600
-    }
+      revalidate: 3600,
+    },
   });
 
   if (!Response.ok) {
@@ -63,12 +68,140 @@ function CocokinGenre(genreIds: number[], daftarGenre: TmdbGenre[]) {
     .filter(Boolean) as string[];
 }
 
-function BikinDurasi(tipe: "movie" | "series") {
-  return tipe === "movie" ? "Movie" : "Series";
+function BikinUsiaDefault(tipe: TipeTontonan) {
+  return tipe === "movie" ? "13+" : "16+";
 }
 
-function BikinUsiaDefault(tipe: "movie" | "series") {
-  return tipe === "movie" ? "13+" : "16+";
+function FormatDurasiMovie(runtime?: number | null) {
+  if (!runtime) return "Durasi belum tersedia";
+
+  const Jam = Math.floor(runtime / 60);
+  const Menit = runtime % 60;
+
+  if (Jam === 0) {
+    return `${Menit}m`;
+  }
+
+  return `${Jam}j ${Menit}m`;
+}
+
+function FormatDurasiSeries(episodeRunTime?: number[]) {
+  const DurasiEpisode = episodeRunTime?.[0];
+
+  if (!DurasiEpisode) {
+    return "Durasi belum tersedia";
+  }
+
+  return `${DurasiEpisode}m / episode`;
+}
+
+function AmbilStudio(
+  productionCompanies?: {
+    id: number;
+    name: string;
+  }[]
+) {
+  if (!productionCompanies || productionCompanies.length === 0) {
+    return ["Studio belum tersedia"];
+  }
+
+  return productionCompanies.slice(0, 3).map((Studio) => Studio.name);
+}
+
+async function AmbilDetailTambahanTmdb(
+  tipe: TipeTontonan,
+  tmdbId: number
+): Promise<{
+  durasi: string;
+  status: string;
+  studio: string[];
+}> {
+  try {
+    if (tipe === "movie") {
+      const Detail = await PanggilTmdb<TmdbMovieDetail>(
+        `/movie/${tmdbId}?language=id-ID`
+      );
+
+      return {
+        durasi: FormatDurasiMovie(Detail.runtime),
+        status: Detail.status || "Status belum tersedia",
+        studio: AmbilStudio(Detail.production_companies),
+      };
+    }
+
+    const Detail = await PanggilTmdb<TmdbTvDetail>(
+      `/tv/${tmdbId}?language=id-ID`
+    );
+
+    return {
+      durasi: FormatDurasiSeries(Detail.episode_run_time),
+      status: Detail.status || "Status belum tersedia",
+      studio: AmbilStudio(Detail.production_companies),
+    };
+  } catch {
+    return {
+      durasi: tipe === "movie" ? "Movie" : "Series",
+      status: "Status belum tersedia",
+      studio: ["Studio belum tersedia"],
+    };
+  }
+}
+
+async function AmbilPemeranTmdb(
+  tipe: TipeTontonan,
+  tmdbId: number
+): Promise<string[]> {
+  const Endpoint =
+    tipe === "movie"
+      ? `/movie/${tmdbId}/credits?language=id-ID`
+      : `/tv/${tmdbId}/credits?language=id-ID`;
+
+  try {
+    const Data = await PanggilTmdb<TmdbCreditsResponse>(Endpoint);
+
+    const Pemeran = Data.cast
+      .sort((AktorA, AktorB) => AktorA.order - AktorB.order)
+      .slice(0, 6)
+      .map((Aktor) => Aktor.name);
+
+    return Pemeran.length > 0 ? Pemeran : ["Pemeran belum tersedia"];
+  } catch {
+    return ["Pemeran belum tersedia"];
+  }
+}
+
+async function AmbilTrailerTmdb(
+  tipe: TipeTontonan,
+  tmdbId: number
+): Promise<string | null> {
+  const Endpoint =
+    tipe === "movie"
+      ? `/movie/${tmdbId}/videos?language=en-US`
+      : `/tv/${tmdbId}/videos?language=en-US`;
+
+  try {
+    const Data = await PanggilTmdb<TmdbVideosResponse>(Endpoint);
+
+    const Trailer =
+      Data.results.find(
+        (Video) =>
+          Video.site === "YouTube" &&
+          Video.type === "Trailer" &&
+          Video.official
+      ) ||
+      Data.results.find(
+        (Video) => Video.site === "YouTube" && Video.type === "Trailer"
+      ) ||
+      Data.results.find((Video) => Video.site === "YouTube");
+
+    if (!Trailer) {
+      return null;
+    }
+
+    return `https://www.youtube.com/watch?v=${Trailer.key}`;
+  } catch {
+    return null;
+  }
 }
 
 export async function AmbilGenreMovie() {
@@ -92,33 +225,45 @@ export async function AmbilMoviePopuler(): Promise<MovieItem[]> {
     PanggilTmdb<TmdbListResponse<TmdbMovieResult>>(
       "/movie/popular?language=id-ID&page=1"
     ),
-    AmbilGenreMovie()
+    AmbilGenreMovie(),
   ]);
 
   return Promise.all(
-    DataMovie.results.slice(0, 10).map(async (Item, Index) => ({
-      id: Item.id,
-      slug: BikinSlug(Item.title, Item.id),
-      tmdbId: Item.id,
-      judul: Item.title || Item.original_title || "Tanpa Judul",
-      judulAsli: Item.original_title || Item.title || "Tanpa Judul",
-      tipe: "movie" as const,
-      tahun: AmbilTahun(Item.release_date),
-      durasi: BikinDurasi("movie"),
-      rating: Item.vote_average || 0,
-      usia: BikinUsiaDefault("movie"),
-      genre: CocokinGenre(Item.genre_ids, DaftarGenre),
-      sutradara: "Data dari TMDB",
-      pemeran: await AmbilPemeranTmdb("movie", Item.id),
-      bahasa: Item.original_language?.toUpperCase() || "N/A",
-      status: "Released",
-      ringkasan: Item.overview || "Sinopsis belum tersedia.",
-      sinopsis: Item.overview || "Sinopsis belum tersedia.",
-      posterPath: Item.poster_path,
-      backdropPath: Item.backdrop_path,
-      trailerLabel: "Lihat Detail",
-      trending: Index < 5
-    }))
+    DataMovie.results.slice(0, 10).map(async (Item, Index) => {
+      const Judul = Item.title || Item.original_title || "Tanpa Judul";
+
+      const [DetailTambahan, Pemeran, TrailerUrl] = await Promise.all([
+        AmbilDetailTambahanTmdb("movie", Item.id),
+        AmbilPemeranTmdb("movie", Item.id),
+        AmbilTrailerTmdb("movie", Item.id),
+      ]);
+
+      return {
+        id: Item.id,
+        slug: BikinSlug(Judul, Item.id),
+        tmdbId: Item.id,
+        judul: Judul,
+        judulAsli: Item.original_title || Item.title || "Tanpa Judul",
+        tipe: "movie" as const,
+        tahun: AmbilTahun(Item.release_date),
+        durasi: DetailTambahan.durasi,
+        rating: Item.vote_average || 0,
+        usia: BikinUsiaDefault("movie"),
+        genre: CocokinGenre(Item.genre_ids, DaftarGenre),
+        sutradara: DetailTambahan.studio.join(", "),
+        pemeran: Pemeran,
+        bahasa: Item.original_language?.toUpperCase() || "N/A",
+        status: DetailTambahan.status,
+        ringkasan: Item.overview || "Sinopsis belum tersedia.",
+        sinopsis: Item.overview || "Sinopsis belum tersedia.",
+        posterPath: Item.poster_path,
+        backdropPath: Item.backdrop_path,
+        trailerLabel: TrailerUrl ? "Lihat Trailer" : "Trailer belum tersedia",
+        trailerUrl: TrailerUrl,
+        studio: DetailTambahan.studio,
+        trending: Index < 5,
+      };
+    })
   );
 }
 
@@ -127,40 +272,52 @@ export async function AmbilSeriesPopuler(): Promise<MovieItem[]> {
     PanggilTmdb<TmdbListResponse<TmdbTvResult>>(
       "/tv/popular?language=id-ID&page=1"
     ),
-    AmbilGenreSeries()
+    AmbilGenreSeries(),
   ]);
 
   return Promise.all(
-    DataSeries.results.slice(0, 10).map(async (Item, Index) => ({
-      id: Item.id,
-      slug: BikinSlug(Item.name, Item.id),
-      tmdbId: Item.id,
-      judul: Item.name || Item.original_name || "Tanpa Judul",
-      judulAsli: Item.original_name || Item.name || "Tanpa Judul",
-      tipe: "series" as const,
-      tahun: AmbilTahun(Item.first_air_date),
-      durasi: BikinDurasi("series"),
-      rating: Item.vote_average || 0,
-      usia: BikinUsiaDefault("series"),
-      genre: CocokinGenre(Item.genre_ids, DaftarGenre),
-      sutradara: "Data dari TMDB",
-      pemeran: await AmbilPemeranTmdb("series", Item.id),
-      bahasa: Item.original_language?.toUpperCase() || "N/A",
-      status: "On Going / Released",
-      ringkasan: Item.overview || "Sinopsis belum tersedia.",
-      sinopsis: Item.overview || "Sinopsis belum tersedia.",
-      posterPath: Item.poster_path,
-      backdropPath: Item.backdrop_path,
-      trailerLabel: "Lihat Detail",
-      trending: Index < 5
-    }))
+    DataSeries.results.slice(0, 10).map(async (Item, Index) => {
+      const Judul = Item.name || Item.original_name || "Tanpa Judul";
+
+      const [DetailTambahan, Pemeran, TrailerUrl] = await Promise.all([
+        AmbilDetailTambahanTmdb("series", Item.id),
+        AmbilPemeranTmdb("series", Item.id),
+        AmbilTrailerTmdb("series", Item.id),
+      ]);
+
+      return {
+        id: Item.id,
+        slug: BikinSlug(Judul, Item.id),
+        tmdbId: Item.id,
+        judul: Judul,
+        judulAsli: Item.original_name || Item.name || "Tanpa Judul",
+        tipe: "series" as const,
+        tahun: AmbilTahun(Item.first_air_date),
+        durasi: DetailTambahan.durasi,
+        rating: Item.vote_average || 0,
+        usia: BikinUsiaDefault("series"),
+        genre: CocokinGenre(Item.genre_ids, DaftarGenre),
+        sutradara: DetailTambahan.studio.join(", "),
+        pemeran: Pemeran,
+        bahasa: Item.original_language?.toUpperCase() || "N/A",
+        status: DetailTambahan.status,
+        ringkasan: Item.overview || "Sinopsis belum tersedia.",
+        sinopsis: Item.overview || "Sinopsis belum tersedia.",
+        posterPath: Item.poster_path,
+        backdropPath: Item.backdrop_path,
+        trailerLabel: TrailerUrl ? "Lihat Trailer" : "Trailer belum tersedia",
+        trailerUrl: TrailerUrl,
+        studio: DetailTambahan.studio,
+        trending: Index < 5,
+      };
+    })
   );
 }
 
 export async function AmbilSemuaTontonan(): Promise<MovieItem[]> {
   const [DaftarMovie, DaftarSeries] = await Promise.all([
     AmbilMoviePopuler(),
-    AmbilSeriesPopuler()
+    AmbilSeriesPopuler(),
   ]);
 
   return [...DaftarMovie, ...DaftarSeries];
@@ -184,34 +341,6 @@ export async function AmbilSlugTontonan() {
   const DaftarTontonan = await AmbilSemuaTontonan();
 
   return DaftarTontonan.map((Item) => ({
-    slug: Item.slug
+    slug: Item.slug,
   }));
-}
-
-async function AmbilPemeranTmdb(
-  tipe: "movie" | "series",
-  tmdbId: number
-): Promise<string[]> {
-  const Endpoint =
-    tipe === "movie"
-      ? `/movie/${tmdbId}/credits?language=id-ID`
-      : `/tv/${tmdbId}/credits?language=id-ID`;
-
-  try {
-    const Data = await PanggilTmdb<{
-      cast: {
-        id: number;
-        name: string;
-        character: string;
-        order: number;
-      }[];
-    }>(Endpoint);
-
-    return Data.cast
-      .sort((AktorA, AktorB) => AktorA.order - AktorB.order)
-      .slice(0, 5)
-      .map((Aktor) => Aktor.name);
-  } catch {
-    return ["Pemeran belum tersedia"];
-  }
 }
